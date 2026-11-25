@@ -1,5 +1,6 @@
 class Event < ApplicationRecord
   belongs_to :source
+  has_many :deliveries, dependent: :restrict_with_error
 
   validates :idempotency_key, :event_type, presence: true, length: { maximum: 255 }
   validates :received_at, presence: true

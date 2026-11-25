@@ -1,5 +1,6 @@
 class Source < ApplicationRecord
   has_many :events, dependent: :restrict_with_error
+  has_many :subscriptions, dependent: :restrict_with_error
 
   encrypts :signing_secret
 

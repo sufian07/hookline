@@ -10,7 +10,32 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_25_180000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_25_181000) do
+  create_table "deliveries", force: :cascade do |t|
+    t.integer "event_id", null: false
+    t.integer "subscription_id", null: false
+    t.string "status", default: "pending", null: false
+    t.integer "attempts_count", default: 0, null: false
+    t.datetime "next_attempt_at", null: false
+    t.datetime "claimed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_id", "subscription_id"], name: "index_deliveries_on_event_id_and_subscription_id", unique: true
+    t.index ["status", "next_attempt_at"], name: "index_deliveries_on_status_and_next_attempt_at"
+    t.index ["subscription_id"], name: "index_deliveries_on_subscription_id"
+    t.check_constraint "status IN ('pending', 'delivering', 'delivered', 'dead')", name: "deliveries_status"
+  end
+
+  create_table "delivery_attempts", force: :cascade do |t|
+    t.integer "delivery_id", null: false
+    t.integer "number", null: false
+    t.integer "response_code"
+    t.string "error"
+    t.integer "duration_ms", null: false
+    t.datetime "created_at", null: false
+    t.index ["delivery_id", "number"], name: "index_delivery_attempts_on_delivery_id_and_number", unique: true
+  end
+
   create_table "events", force: :cascade do |t|
     t.integer "source_id", null: false
     t.string "idempotency_key", null: false
@@ -29,5 +54,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_25_180000) do
     t.index ["token_digest"], name: "index_sources_on_token_digest", unique: true
   end
 
+  create_table "subscriptions", force: :cascade do |t|
+    t.integer "source_id", null: false
+    t.string "url", null: false
+    t.string "event_filter"
+    t.text "signing_secret", null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["source_id"], name: "index_subscriptions_on_source_id"
+  end
+
+  add_foreign_key "deliveries", "events"
+  add_foreign_key "deliveries", "subscriptions"
+  add_foreign_key "delivery_attempts", "deliveries"
   add_foreign_key "events", "sources"
+  add_foreign_key "subscriptions", "sources"
 end
