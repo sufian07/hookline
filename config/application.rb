@@ -41,7 +41,9 @@ module Hookline
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
 
-    # Bearer token for /api. When unset, every API request is refused.
+    # Bearer token for /api with full access. When unset, no request gets admin access.
     config.x.admin_token = ENV["HOOKLINE_ADMIN_TOKEN"]
+    # Optional read-only token, safe to publish for a demo.
+    config.x.viewer_token = ENV["HOOKLINE_VIEWER_TOKEN"]
   end
 end

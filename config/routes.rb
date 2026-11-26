@@ -4,6 +4,7 @@ Rails.application.routes.draw do
   post "in/:token" => "ingest#create"
 
   namespace :api do
+    resource :session, only: :show
     resources :sources, only: %i[index show create] do
       resources :subscriptions, only: %i[index create], shallow: true
     end

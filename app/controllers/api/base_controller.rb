@@ -6,6 +6,7 @@ module Api
     MAX_LIMIT = 100
 
     before_action :authenticate
+    before_action :require_admin_for_writes
 
     rescue_from ActiveRecord::RecordNotFound do
       render json: { error: "not found" }, status: :not_found
@@ -17,11 +18,17 @@ module Api
 
     private
 
+    attr_reader :role
+
     def authenticate
-      expected = Rails.configuration.x.admin_token.to_s
-      authenticate_or_request_with_http_token do |token, _options|
-        expected.present? && ActiveSupport::SecurityUtils.secure_compare(token, expected)
-      end
+      @role = authenticate_or_request_with_http_token { |token, _options| AccessRole.for(token) }
+    end
+
+    # Reads are open to every role; anything that changes state needs the admin token.
+    def require_admin_for_writes
+      return if request.get? || request.head? || role == :admin
+
+      render json: { error: "this token is read-only" }, status: :forbidden
     end
 
     # Keyset pagination on id, newest first: stable while new rows arrive.
