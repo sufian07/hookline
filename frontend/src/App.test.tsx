@@ -7,7 +7,7 @@ import { fakeClient } from "./test/fakes";
 it("asks for a token first, then remembers it for this browser tab", async () => {
   render(<App makeClient={vi.fn(() => fakeClient())} />);
 
-  await userEvent.type(screen.getByLabelText("Admin token"), "good");
+  await userEvent.type(screen.getByLabelText("Access token"), "good");
   await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
   expect(await screen.findByRole("link", { name: "Events" })).toBeInTheDocument();
@@ -20,7 +20,7 @@ it("signs out", async () => {
 
   await userEvent.click(await screen.findByRole("button", { name: "Sign out" }));
 
-  expect(screen.getByLabelText("Admin token")).toBeInTheDocument();
+  expect(screen.getByLabelText("Access token")).toBeInTheDocument();
   expect(sessionStorage.getItem("hookline.token")).toBeNull();
 });
 

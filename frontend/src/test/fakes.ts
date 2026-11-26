@@ -8,6 +8,7 @@ export function page<T>(data: T[], next_cursor: number | null = null): Page<T> {
 export function fakeClient(overrides: Partial<Client> = {}): Client {
   const empty = () => Promise.resolve(page([]));
   return {
+    session: vi.fn(() => Promise.resolve({ role: "admin" as const })),
     listSources: vi.fn(empty),
     createSource: vi.fn(),
     listSubscriptions: vi.fn(empty),

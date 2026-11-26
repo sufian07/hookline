@@ -49,4 +49,11 @@ describe("api client", () => {
       "Url must be https, Url is too long",
     );
   });
+
+  it("asks the API which role the token has", async () => {
+    const fetch = respond(200, { role: "viewer" });
+
+    await expect(createClient("t0k", fetch).session()).resolves.toEqual({ role: "viewer" });
+    expect(fetch.mock.calls[0][0]).toBe("/api/session");
+  });
 });
