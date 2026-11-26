@@ -9,12 +9,14 @@ A small webhook gateway built with Rails 8. It receives signed webhooks, stores 
 - **Delivery:** signed outgoing requests, exponential backoff with jitter, dead-letter after 8 attempts, every completed attempt recorded
 - **Recovery:** delivery rows are the source of truth; a sweep repairs lost jobs and dead workers
 - **Destination safety:** https only, private and reserved addresses blocked, connection pinned to the checked address, redirects not followed
+- **Management API:** sources, subscriptions, events and deliveries, with bearer-token auth and cursor pagination
+- **Replay:** re-queue a dead or delivered delivery with a fresh set of attempts
 
 Delivery is at least once. Receivers should de-duplicate on `X-Hookline-Delivery`.
 
 ## Not built yet
 
-Management API, React dashboard, replay, CI and deployment. Until the API exists, create sources and subscriptions in the Rails console.
+React dashboard, CI and deployment.
 
 ## Flow
 
@@ -37,16 +39,31 @@ flowchart LR
 bundle install
 bin/rails db:prepare
 bundle exec rspec
-bin/rails server
+HOOKLINE_ADMIN_TOKEN=change-me bin/rails server
 bin/jobs   # workers; needs fork, so Linux or macOS
 ```
 
-In the console:
+## API
 
-```ruby
-source = Source.create!(name: "Shop", signing_secret: "change-me")
-source.token # shown once
-source.subscriptions.create!(url: "https://receiver.example.com/hooks")
+Every `/api` request needs `Authorization: Bearer $HOOKLINE_ADMIN_TOKEN`. Without that variable, the API refuses all requests.
+
+| Method | Path | Notes |
+|---|---|---|
+| `POST` | `/api/sources` | `name`, `signing_secret`. Returns the ingest token once. |
+| `GET` | `/api/sources`, `/api/sources/:id` | |
+| `POST` | `/api/sources/:id/subscriptions` | `url`, optional `event_filter`. Returns the signing secret once. |
+| `GET` | `/api/sources/:id/subscriptions` | |
+| `PATCH` | `/api/subscriptions/:id` | `url`, `event_filter`, `active` |
+| `GET` | `/api/events` | Filters: `source_id`, `event_type` |
+| `GET` | `/api/events/:id` | Payload, deliveries and every attempt |
+| `GET` | `/api/deliveries` | Filters: `status`, `subscription_id` |
+| `POST` | `/api/deliveries/:id/replay` | Only for `dead` or `delivered`; otherwise 409 |
+
+Lists return `{ "data": [...], "next_cursor": ... }`, newest first. Pass `before=<next_cursor>` for the next page and `limit` (up to 100) to change the page size.
+
+```sh
+curl -H "Authorization: Bearer $HOOKLINE_ADMIN_TOKEN" -H "Content-Type: application/json" \
+  -d '{"name":"Shop","signing_secret":"change-me"}' localhost:3000/api/sources
 ```
 
 ## Request signature
