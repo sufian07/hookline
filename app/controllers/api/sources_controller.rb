@@ -9,7 +9,7 @@ module Api
     end
 
     def create
-      source = Source.new(params.permit(:name, :signing_secret))
+      source = Source.new(params.permit(:name, :signing_secret, :verification))
       return render_errors(source) unless source.save
 
       # The plaintext token exists only now; it is stored as a digest.

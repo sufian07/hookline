@@ -7,9 +7,12 @@ export interface Page<T> {
   next_cursor: number | null;
 }
 
+export type Verification = "hookline" | "stripe";
+
 export interface Source {
   id: number;
   name: string;
+  verification: Verification;
   created_at: string;
 }
 
@@ -66,7 +69,7 @@ export interface EventDetail extends EventSummary {
 export interface Client {
   session(): Promise<{ role: Role }>;
   listSources(params?: { before?: number }): Promise<Page<Source>>;
-  createSource(name: string, signingSecret: string): Promise<CreatedSource>;
+  createSource(name: string, signingSecret: string, verification: Verification): Promise<CreatedSource>;
   listSubscriptions(sourceId: number, params?: { before?: number }): Promise<Page<Subscription>>;
   createSubscription(
     sourceId: number,
@@ -135,8 +138,8 @@ export function createClient(token: string, fetchImpl: Fetch = (input, init) => 
   return {
     session: () => request("/api/session"),
     listSources: (params = {}) => request(withQuery("/api/sources", params)),
-    createSource: (name, signingSecret) =>
-      request("/api/sources", { method: "POST", body: { name, signing_secret: signingSecret } }),
+    createSource: (name, signingSecret, verification) =>
+      request("/api/sources", { method: "POST", body: { name, signing_secret: signingSecret, verification } }),
     listSubscriptions: (sourceId, params = {}) =>
       request(withQuery(`/api/sources/${sourceId}/subscriptions`, params)),
     createSubscription: (sourceId, input) =>

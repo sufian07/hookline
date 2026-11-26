@@ -4,7 +4,7 @@ module Api
     module_function
 
     def source(source)
-      { id: source.id, name: source.name, created_at: source.created_at }
+      { id: source.id, name: source.name, verification: source.verification, created_at: source.created_at }
     end
 
     def subscription(subscription)

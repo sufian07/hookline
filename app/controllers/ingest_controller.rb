@@ -18,16 +18,18 @@ class IngestController < ApplicationController
     return head :content_too_large if body.bytesize > MAX_BODY_BYTES
     return head :unauthorized unless authentic?(source, body)
 
-    respond_to_result EventReceiver.new(source).call(
-      event_type: request.headers["X-Hookline-Event"],
-      idempotency_key: request.headers["X-Hookline-Idempotency-Key"],
-      payload: body
-    )
+    respond_to_result EventReceiver.new(source).call(payload: body, **event_identity(source, body))
   end
 
   private
 
   def authentic?(source, body)
+    if source.verification == "stripe"
+      return WebhookSignature.valid_stripe?(
+        secret: source.signing_secret, header: request.headers["Stripe-Signature"], body:, now: Time.current
+      )
+    end
+
     WebhookSignature.valid?(
       secret: source.signing_secret,
       timestamp: request.headers["X-Hookline-Timestamp"],
@@ -35,6 +37,23 @@ class IngestController < ApplicationController
       body:,
       now: Time.current
     )
+  end
+
+  # Stripe puts the event type and id in the body; Hookline producers send headers.
+  def event_identity(source, body)
+    if source.verification == "stripe"
+      event = parse_object(body)
+      { event_type: event["type"], idempotency_key: event["id"] }
+    else
+      { event_type: request.headers["X-Hookline-Event"], idempotency_key: request.headers["X-Hookline-Idempotency-Key"] }
+    end
+  end
+
+  def parse_object(body)
+    parsed = JSON.parse(body)
+    parsed.is_a?(Hash) ? parsed : {}
+  rescue JSON::ParserError
+    {}
   end
 
   def respond_to_result(result)

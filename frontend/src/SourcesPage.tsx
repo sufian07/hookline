@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import type { Client, Source, Subscription } from "./api";
+import type { Client, Source, Subscription, Verification } from "./api";
 import { formatTime, messageOf } from "./format";
 import { usePagedList } from "./usePagedList";
 
@@ -7,6 +7,7 @@ export function SourcesPage({ client, canWrite = true }: { client: Client; canWr
   const sources = usePagedList((_filter: object, before) => client.listSources({ before }), {});
   const [name, setName] = useState("");
   const [secret, setSecret] = useState("");
+  const [verification, setVerification] = useState<Verification>("hookline");
   const [created, setCreated] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
@@ -15,7 +16,7 @@ export function SourcesPage({ client, canWrite = true }: { client: Client; canWr
     e.preventDefault();
     setError(null);
     try {
-      const source = await client.createSource(name, secret);
+      const source = await client.createSource(name, secret, verification);
       setCreated(`${window.location.origin}${source.ingest_path}`);
       sources.setItems((items) => [source, ...items]);
       setName("");
@@ -37,6 +38,13 @@ export function SourcesPage({ client, canWrite = true }: { client: Client; canWr
         <label>
           Signing secret
           <input type="password" autoComplete="off" value={secret} onChange={(e) => setSecret(e.target.value)} />
+        </label>
+        <label>
+          Signature scheme
+          <select value={verification} onChange={(e) => setVerification(e.target.value as Verification)}>
+            <option value="hookline">Hookline headers</option>
+            <option value="stripe">Stripe-Signature</option>
+          </select>
         </label>
         <button type="submit">Create source</button>
       </form>
@@ -80,6 +88,7 @@ function SourceRow({ client, canWrite, source, open, onToggle }: SourceRowProps)
     <div className="card">
       <div className="row">
         <strong>{source.name}</strong>
+        {source.verification === "stripe" && <span className="badge">Stripe-signed</span>}
         <span className="muted">
           #{source.id}, created {formatTime(source.created_at)}
         </span>

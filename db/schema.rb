@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_26_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_26_120000) do
   create_table "deliveries", force: :cascade do |t|
     t.integer "event_id", null: false
     t.integer "subscription_id", null: false
@@ -52,7 +52,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_26_090000) do
     t.text "signing_secret", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "verification", default: "hookline", null: false
     t.index ["token_digest"], name: "index_sources_on_token_digest", unique: true
+    t.check_constraint "verification IN ('hookline', 'stripe')", name: "sources_verification"
   end
 
   create_table "subscriptions", force: :cascade do |t|

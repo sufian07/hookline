@@ -4,7 +4,10 @@ class Source < ApplicationRecord
 
   encrypts :signing_secret
 
+  VERIFICATIONS = %w[hookline stripe].freeze
+
   validates :name, :signing_secret, presence: true
+  validates :verification, inclusion: { in: VERIFICATIONS }
 
   before_validation :generate_token, on: :create
 
