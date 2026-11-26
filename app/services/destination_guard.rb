@@ -19,8 +19,19 @@ class DestinationGuard
     @resolver = resolver
   end
 
+  # Shape-only check, without DNS: used when a subscription is saved.
+  def self.check_format(url)
+    uri = URI.parse(url)
+    unless uri.is_a?(URI::HTTPS) && uri.hostname.present? && uri.userinfo.nil?
+      raise Blocked, "must be https without credentials"
+    end
+    uri
+  rescue URI::InvalidURIError
+    raise Blocked, "is malformed"
+  end
+
   def resolve(url)
-    addresses = @resolver.call(parse(url).hostname)
+    addresses = @resolver.call(self.class.check_format(url).hostname)
     raise Blocked, "host does not resolve" if addresses.empty?
     raise Blocked, "address not allowed" unless addresses.all? { |address| public?(address) }
 
@@ -29,15 +40,6 @@ class DestinationGuard
 
   private
 
-  def parse(url)
-    uri = URI.parse(url)
-    unless uri.is_a?(URI::HTTPS) && uri.hostname.present? && uri.userinfo.nil?
-      raise Blocked, "URL must be https without credentials"
-    end
-    uri
-  rescue URI::InvalidURIError
-    raise Blocked, "malformed URL"
-  end
 
   def public?(address)
     ip = IPAddr.new(address)

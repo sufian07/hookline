@@ -3,6 +3,7 @@
 # Transitions are conditional UPDATEs, so two workers cannot both win one.
 class Delivery < ApplicationRecord
   MAX_ATTEMPTS = 8
+  STATUSES = %w[pending delivering delivered dead].freeze
 
   belongs_to :event
   belongs_to :subscription
