@@ -45,5 +45,10 @@ module Hookline
     config.x.admin_token = ENV["HOOKLINE_ADMIN_TOKEN"]
     # Optional read-only token, safe to publish for a demo.
     config.x.viewer_token = ENV["HOOKLINE_VIEWER_TOKEN"]
+
+    # Demo mode limits subscriptions to the built-in receiver and enables demo data.
+    config.x.demo_mode = ENV["HOOKLINE_DEMO_MODE"] == "1"
+    # Public base URL. Render sets RENDER_EXTERNAL_URL automatically.
+    config.x.app_url = ENV["APP_URL"].presence || ENV["RENDER_EXTERNAL_URL"].presence
   end
 end

@@ -5,6 +5,10 @@ module Api
     DEFAULT_LIMIT = 50
     MAX_LIMIT = 100
 
+    rate_limit to: RateLimits::API_PER_MINUTE, within: 1.minute, name: "api", store: RateLimits.store,
+               by: -> { RateLimits.key_for(request.authorization) },
+               with: -> { render json: { error: "rate limit exceeded" }, status: :too_many_requests }
+
     before_action :authenticate
     before_action :require_admin_for_writes
 

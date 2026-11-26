@@ -17,4 +17,5 @@ end
 RSpec.configure do |config|
   config.include ApiHelpers, type: :request
   config.before(type: :request) { Rails.configuration.x.admin_token = ApiHelpers::ADMIN_TOKEN }
+  config.before { RateLimits.store.clear }
 end

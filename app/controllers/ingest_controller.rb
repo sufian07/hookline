@@ -4,6 +4,10 @@ class IngestController < ApplicationController
   # The raw body is what was signed, so parsed params are never used here.
   wrap_parameters false
 
+  rate_limit to: RateLimits::INGEST_PER_MINUTE, within: 1.minute, name: "ingest", store: RateLimits.store,
+             by: -> { RateLimits.key_for(request.path_parameters[:token]) },
+             with: -> { head :too_many_requests }
+
   def create
     return head :content_too_large if request.content_length.to_i > MAX_BODY_BYTES
 
