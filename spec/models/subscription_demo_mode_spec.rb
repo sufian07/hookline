@@ -1,17 +1,7 @@
 require "rails_helper"
 
-RSpec.describe Subscription, "in demo mode" do
+RSpec.describe Subscription, "in demo mode", :demo_mode do
   let(:source) { create_source }
-
-  around do |example|
-    config = Rails.configuration.x
-    config.demo_mode = true
-    config.app_url = "https://hookline-demo.example.com"
-    example.run
-  ensure
-    config.demo_mode = false
-    config.app_url = nil
-  end
 
   it "only accepts the built-in demo receiver" do
     expect(source.subscriptions.new(url: "https://hookline-demo.example.com/demo/receiver")).to be_valid
