@@ -11,5 +11,15 @@ module Api
 
       render_page(scope) { |delivery| Serializers.delivery(delivery) }
     end
+
+    def replay
+      delivery = Delivery.find(params[:id])
+      unless delivery.replay
+        return render json: { error: "only dead or delivered deliveries can be replayed" }, status: :conflict
+      end
+
+      DeliverJob.perform_later(delivery.id)
+      render json: Serializers.delivery(delivery), status: :accepted
+    end
   end
 end

@@ -14,7 +14,7 @@ class SweepDeliveriesJob < ApplicationJob
 
   def release_stuck
     stuck = Delivery.where(status: "delivering", claimed_at: ..STUCK_AFTER.ago)
-    stuck.where(attempts_count: Delivery::MAX_ATTEMPTS..)
+    stuck.where("attempts_count >= attempt_limit")
          .update_all(status: "dead", claimed_at: nil, updated_at: Time.current)
     # next_attempt_at is already in the past, so released rows are picked up as overdue.
     stuck.update_all(status: "pending", claimed_at: nil, updated_at: Time.current)

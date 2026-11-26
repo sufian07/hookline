@@ -25,7 +25,7 @@ module Api
     end
 
     def delivery(delivery)
-      delivery.slice(:id, :event_id, :subscription_id, :status, :attempts_count, :next_attempt_at, :updated_at)
+      delivery.slice(:id, :event_id, :subscription_id, :status, :attempts_count, :attempt_limit, :next_attempt_at, :updated_at)
     end
 
     def attempt(attempt)

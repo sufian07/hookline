@@ -8,6 +8,8 @@ Rails.application.routes.draw do
     end
     resources :subscriptions, only: :update
     resources :events, only: %i[index show]
-    resources :deliveries, only: :index
+    resources :deliveries, only: :index do
+      post :replay, on: :member
+    end
   end
 end

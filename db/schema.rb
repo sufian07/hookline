@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_25_181000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_26_090000) do
   create_table "deliveries", force: :cascade do |t|
     t.integer "event_id", null: false
     t.integer "subscription_id", null: false
@@ -20,6 +20,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_25_181000) do
     t.datetime "claimed_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "attempt_limit", default: 8, null: false
     t.index ["event_id", "subscription_id"], name: "index_deliveries_on_event_id_and_subscription_id", unique: true
     t.index ["status", "next_attempt_at"], name: "index_deliveries_on_status_and_next_attempt_at"
     t.index ["subscription_id"], name: "index_deliveries_on_subscription_id"
