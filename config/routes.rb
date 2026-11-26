@@ -2,6 +2,7 @@ Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
   root to: redirect("/dashboard/")
   post "in/:token" => "ingest#create"
+  post "demo/receiver" => "demo#receive"
 
   namespace :api do
     resource :session, only: :show
