@@ -1,5 +1,7 @@
 # Hookline
 
+[![CI](https://github.com/sufian07/hookline/actions/workflows/ci.yml/badge.svg)](https://github.com/sufian07/hookline/actions/workflows/ci.yml)
+
 A small webhook gateway built with Rails 8. It receives signed webhooks, stores each one once, and delivers them to subscribers with retries.
 
 ## What works
@@ -17,7 +19,7 @@ Delivery is at least once. Receivers should de-duplicate on `X-Hookline-Delivery
 
 ## Not built yet
 
-CI and deployment. Access is a single admin token, with no user accounts or audit log.
+Deployment. Access is a single admin token, with no user accounts or audit log.
 
 ## Flow
 
@@ -43,6 +45,10 @@ bundle exec rspec
 HOOKLINE_ADMIN_TOKEN=change-me bin/rails server
 bin/jobs   # workers; needs fork, so Linux or macOS
 ```
+
+## CI
+
+Every push runs the Rails specs, RuboCop, Brakeman and a gem audit; the dashboard tests and build; and `script/worker_smoke.sh`, which starts the server and the Solid Queue worker, sends a signed webhook and waits for the worker to record a delivery attempt.
 
 ## Dashboard
 
