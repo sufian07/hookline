@@ -1,0 +1,28 @@
+# Render blueprint for the public demo. Free plan: no persistent disk, so every
+# restart begins again from fresh demo data. See the README for the limits.
+services:
+  - type: web
+    name: hookline
+    runtime: docker
+    plan: free
+    branch: main
+    # Deploy only after the CI checks on main have passed.
+    autoDeployTrigger: checksPass
+    healthCheckPath: /up
+    envVars:
+      - key: SECRET_KEY_BASE
+        generateValue: true
+      - key: ENCRYPTION_PRIMARY_KEY
+        generateValue: true
+      - key: ENCRYPTION_DETERMINISTIC_KEY
+        generateValue: true
+      - key: ENCRYPTION_KEY_DERIVATION_SALT
+        generateValue: true
+      # Full access. Render asks for it when the blueprint is created; keep it private.
+      - key: HOOKLINE_ADMIN_TOKEN
+        sync: false
+      # Public on purpose: read-only access for anyone trying the demo.
+      - key: HOOKLINE_VIEWER_TOKEN
+        value: demo-viewer
+      - key: HOOKLINE_DEMO_MODE
+        value: "1"
