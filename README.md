@@ -4,6 +4,8 @@
 
 A small webhook gateway built with Rails 8. It receives signed webhooks, stores each one once, and delivers them to subscribers with retries.
 
+**Live demo:** [hookline-twph.onrender.com](https://hookline-twph.onrender.com/). Sign in with the read-only token `demo-viewer`. It runs on Render's free plan, so the first visit after a quiet spell takes about a minute, and the data resets whenever it restarts.
+
 ## What works
 
 - **Ingest:** `POST /in/:token` with HMAC-SHA256 verification, a 5-minute replay window, a size limit and idempotency keys
