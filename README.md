@@ -8,7 +8,7 @@ A small webhook gateway built with Rails 8. It receives signed webhooks, stores 
 
 ## What works
 
-- **Ingest:** `POST /in/:token` with HMAC-SHA256 verification, a 5-minute replay window, a size limit and idempotency keys
+- **Ingest:** `POST /in/:token` with HMAC-SHA256 verification (Hookline's headers or Stripe's `Stripe-Signature`), a 5-minute replay window, a size limit and idempotency keys
 - **Fan-out:** one delivery per active subscription, with an optional event-type filter
 - **Delivery:** signed outgoing requests, exponential backoff with jitter, dead-letter after 8 attempts, every completed attempt recorded
 - **Recovery:** delivery rows are the source of truth; a sweep repairs lost jobs and dead workers
@@ -144,6 +144,8 @@ curl -H "Authorization: Bearer $HOOKLINE_ADMIN_TOKEN" -H "Content-Type: applicat
 ## Request signature
 
 `X-Hookline-Signature` is `sha256=` followed by the hex HMAC-SHA256 of `"<timestamp>.<raw body>"`. Ingest also requires `X-Hookline-Timestamp`, `X-Hookline-Event` and `X-Hookline-Idempotency-Key`. Outgoing requests use the same scheme with the subscription's secret.
+
+Sources can instead use **Stripe's scheme** (`"verification": "stripe"` when creating the source, with the Stripe endpoint's signing secret). Ingest then checks `Stripe-Signature`, takes the event type and idempotency key from the event's `type` and `id`, and stores Stripe's body unchanged. Deliveries are re-signed with Hookline's scheme. [Ledgerline](https://github.com/sufian07/ledgerline) uses this to receive Stripe payments with Hookline's retries and replay.
 
 ## Decisions
 
