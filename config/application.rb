@@ -50,5 +50,7 @@ module Hookline
     config.x.demo_mode = ENV["HOOKLINE_DEMO_MODE"] == "1"
     # Public base URL. Render sets RENDER_EXTERNAL_URL automatically.
     config.x.app_url = ENV["APP_URL"].presence || ENV["RENDER_EXTERNAL_URL"].presence
+    # The one non-demo subscription target allowed in demo mode (see PaymentPipeline).
+    config.x.payment_pipeline_url = ENV["HOOKLINE_LEDGERLINE_URL"].presence
   end
 end

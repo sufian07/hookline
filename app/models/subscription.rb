@@ -21,6 +21,8 @@ class Subscription < ApplicationRecord
   end
 
   def demo_receiver_only
-    errors.add(:url, "must be the demo receiver in demo mode") unless DemoReceiver.url?(url)
+    return if DemoReceiver.url?(url) || url == Rails.configuration.x.payment_pipeline_url
+
+    errors.add(:url, "must be the demo receiver in demo mode")
   end
 end

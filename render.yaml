@@ -26,3 +26,13 @@ services:
         value: demo-viewer
       - key: HOOKLINE_DEMO_MODE
         value: "1"
+      # Optional Stripe-to-Ledgerline pipeline, rebuilt on every boot. Set these in
+      # the Render dashboard (see the README); keep them private.
+      - key: HOOKLINE_STRIPE_SOURCE_TOKEN
+        sync: false
+      - key: HOOKLINE_STRIPE_SIGNING_SECRET
+        sync: false
+      - key: HOOKLINE_LEDGERLINE_URL
+        sync: false
+      - key: HOOKLINE_LEDGERLINE_SECRET
+        sync: false

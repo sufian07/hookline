@@ -11,8 +11,9 @@ class Source < ApplicationRecord
 
   before_validation :generate_token, on: :create
 
-  # Plaintext token, available only on the instance that created it.
-  attr_reader :token
+  # Plaintext token, available only on the instance that created it. It can be chosen
+  # up front (see PaymentPipeline); otherwise a random one is generated.
+  attr_accessor :token
 
   def self.find_by_token(token)
     token.present? ? find_by(token_digest: digest(token)) : nil
@@ -25,7 +26,7 @@ class Source < ApplicationRecord
   private
 
   def generate_token
-    @token = SecureRandom.urlsafe_base64(24)
+    @token ||= SecureRandom.urlsafe_base64(24)
     self.token_digest = self.class.digest(@token)
   end
 end

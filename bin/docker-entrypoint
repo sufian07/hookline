@@ -7,6 +7,7 @@ if [ "$1" = "bin/rails" ] && [ "$2" = "server" ]; then
   if [ "$HOOKLINE_DEMO_MODE" = "1" ]; then
     bin/rails hookline:demo_seed
   fi
+  bin/rails hookline:payment_pipeline
 fi
 
 exec "$@"

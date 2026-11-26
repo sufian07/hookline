@@ -68,6 +68,7 @@ Then open `http://localhost:3000/` and sign in with a token. The token is kept i
 | `HOOKLINE_DEMO_MODE=1` | Loads demo data into an empty database, sends a demo event every 5 minutes, and only allows subscriptions to the built-in demo receiver. |
 | `APP_URL` | Public base URL, used to build the demo receiver's address. On Render, `RENDER_EXTERNAL_URL` is used instead. |
 | `HOOKLINE_INGEST_PER_MINUTE`, `HOOKLINE_API_PER_MINUTE` | Rate limits; defaults 120 and 300. |
+| `HOOKLINE_STRIPE_SOURCE_TOKEN`, `HOOKLINE_STRIPE_SIGNING_SECRET`, `HOOKLINE_LEDGERLINE_URL`, `HOOKLINE_LEDGERLINE_SECRET` | Optional payment pipeline, created on every boot: a Stripe-signed source at `/in/<token>` and a subscription to Ledgerline. Because it is rebuilt from configuration, it survives the free plan's data resets, and Stripe's webhook URL never changes. Allowed in demo mode. |
 | `SECRET_KEY_BASE`, `ENCRYPTION_*` | Required in production; the app will not start without them. |
 
 ## Deployment

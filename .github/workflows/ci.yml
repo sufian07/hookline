@@ -103,7 +103,7 @@ jobs:
           docker run -d --name app -p 3000:3000 "${secrets[@]}" \
             -e HOOKLINE_INGEST_PER_MINUTE=1000000 -e HOOKLINE_API_PER_MINUTE=1000000 hookline:ci
           docker run -d --name demo -p 3001:3000 "${secrets[@]}" \
-            -e HOOKLINE_DEMO_MODE=1 -e APP_URL=https://hookline-ci.example.com hookline:ci
+            -e HOOKLINE_DEMO_MODE=1 -e APP_URL=https://hookline-ci.example.com             -e HOOKLINE_STRIPE_SOURCE_TOKEN=ci_stripe_source_token_0123456789 -e HOOKLINE_STRIPE_SIGNING_SECRET=whsec_ci             -e HOOKLINE_LEDGERLINE_URL=https://ledgerline-ci.example.com/webhooks/hookline -e HOOKLINE_LEDGERLINE_SECRET=ci-shared             hookline:ci
           for port in 3000 3001; do
             for _ in $(seq 60); do curl -sf "http://127.0.0.1:$port/up" > /dev/null && break; sleep 1; done
             curl -sf "http://127.0.0.1:$port/up" > /dev/null
@@ -121,6 +121,25 @@ jobs:
           test "$events" -ge 40
           test "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H "$viewer" -H 'Content-Type: application/json' -d '{"name":"x"}' "$base/api/sources")" = 403
           test "$(curl -s -o /dev/null -w '%{http_code}' "$base/dashboard/")" = 200
+
+      - name: Demo mode also builds the payment pipeline, and Stripe-signed events reach it
+        run: |
+          base=http://127.0.0.1:3001
+          viewer="Authorization: Bearer $VIEWER_TOKEN"
+          curl -sf -H "$viewer" "$base/api/sources" | ruby -rjson -e '
+            stripe = JSON.parse(STDIN.read)["data"].find { |s| s["verification"] == "stripe" } or abort("no Stripe source")
+            puts "Stripe source: #{stripe["name"]} (id #{stripe["id"]})"
+            File.write("stripe_source_id", stripe["id"].to_s)'
+          curl -sf -H "$viewer" "$base/api/sources/$(cat stripe_source_id)/subscriptions" | ruby -rjson -e '
+            urls = JSON.parse(STDIN.read)["data"].map { |s| s["url"] }
+            abort("missing Ledgerline subscription: #{urls}") unless urls == ["https://ledgerline-ci.example.com/webhooks/hookline"]
+            puts "Subscription: #{urls.first}"'
+          body='{"id":"evt_ci_1","type":"checkout.session.completed","data":{"object":{"id":"cs_ci"}}}'
+          at=$(date +%s)
+          sig=$(printf '%s.%s' "$at" "$body" | openssl dgst -sha256 -hmac whsec_ci | sed 's/^.* //')
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' -H "Stripe-Signature: t=$at,v1=$sig"             -d "$body" "$base/in/ci_stripe_source_token_0123456789")
+          echo "Stripe-signed event accepted: $code"
+          test "$code" = 202
 
       - name: Load test ingest
         run: |
