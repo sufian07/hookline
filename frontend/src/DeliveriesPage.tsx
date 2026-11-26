@@ -11,7 +11,7 @@ const STATUSES: { value: DeliveryStatus; label: string }[] = [
   { value: "delivered", label: "Delivered" },
 ];
 
-export function DeliveriesPage({ client }: { client: Client }) {
+export function DeliveriesPage({ client, canWrite = true }: { client: Client; canWrite?: boolean }) {
   const [status, setStatus] = useState<DeliveryStatus>("dead");
   const [actionError, setActionError] = useState<string | null>(null);
   const list = usePagedList((filter: { status: DeliveryStatus }, before) => client.listDeliveries({ ...filter, before }), {
@@ -76,7 +76,7 @@ export function DeliveriesPage({ client }: { client: Client }) {
                 </td>
                 <td>{delivery.status === "pending" ? formatTime(delivery.next_attempt_at) : "—"}</td>
                 <td>
-                  {canReplay(delivery.status) && (
+                  {canWrite && canReplay(delivery.status) && (
                     <button type="button" aria-label={`Replay delivery ${delivery.id}`} onClick={() => replay(delivery.id)}>
                       Replay
                     </button>

@@ -1,3 +1,5 @@
+export type Role = "admin" | "viewer";
+
 export type DeliveryStatus = "pending" | "delivering" | "delivered" | "dead";
 
 export interface Page<T> {
@@ -62,6 +64,7 @@ export interface EventDetail extends EventSummary {
 }
 
 export interface Client {
+  session(): Promise<{ role: Role }>;
   listSources(params?: { before?: number }): Promise<Page<Source>>;
   createSource(name: string, signingSecret: string): Promise<CreatedSource>;
   listSubscriptions(sourceId: number, params?: { before?: number }): Promise<Page<Subscription>>;
@@ -130,6 +133,7 @@ export function createClient(token: string, fetchImpl: Fetch = (input, init) => 
   }
 
   return {
+    session: () => request("/api/session"),
     listSources: (params = {}) => request(withQuery("/api/sources", params)),
     createSource: (name, signingSecret) =>
       request("/api/sources", { method: "POST", body: { name, signing_secret: signingSecret } }),

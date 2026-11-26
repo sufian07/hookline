@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { createClient, type Client } from "./api";
+import { createClient, type Client, type Role } from "./api";
 import { DeliveriesPage } from "./DeliveriesPage";
 import { EventDetail } from "./EventDetail";
 import { EventsPage } from "./EventsPage";
@@ -48,26 +48,55 @@ function writeToken(token: string | null) {
 
 export function App({ makeClient = createClient }: { makeClient?: (token: string) => Client }) {
   const [token, setToken] = useState<string | null>(readToken);
+  const [role, setRole] = useState<Role | null>(null);
   const client = useMemo(() => (token ? makeClient(token) : null), [token, makeClient]);
   const route = useRoute();
 
-  function signIn(accepted: string) {
+  function signIn(accepted: string, acceptedRole: Role) {
     writeToken(accepted);
     setToken(accepted);
+    setRole(acceptedRole);
   }
 
   function signOut() {
     writeToken(null);
     setToken(null);
+    setRole(null);
   }
+
+  // A token remembered from earlier in this tab is checked again, since it may have been rotated.
+  useEffect(() => {
+    if (!client || role) return;
+    let cancelled = false;
+    client
+      .session()
+      .then((session) => !cancelled && setRole(session.role))
+      .catch(() => !cancelled && signOut());
+    return () => {
+      cancelled = true;
+    };
+  }, [client, role]);
 
   if (!client) {
     return (
       <main>
-        <TokenForm verify={(candidate) => makeClient(candidate).listSources().then(() => undefined)} onAccept={signIn} />
+        <TokenForm
+          verify={(candidate) => makeClient(candidate).session().then((session) => session.role)}
+          onAccept={signIn}
+        />
       </main>
     );
   }
+
+  if (!role) {
+    return (
+      <main>
+        <p className="muted">Checking access…</p>
+      </main>
+    );
+  }
+
+  const canWrite = role === "admin";
 
   return (
     <>
@@ -89,10 +118,13 @@ export function App({ makeClient = createClient }: { makeClient?: (token: string
         </button>
       </header>
       <main>
+        {!canWrite && (
+          <p className="notice">Read-only demo: you can browse everything here, but changes are turned off.</p>
+        )}
         {route.name === "events" && <EventsPage client={client} />}
-        {route.name === "event" && <EventDetail client={client} id={route.id} />}
-        {route.name === "deliveries" && <DeliveriesPage client={client} />}
-        {route.name === "sources" && <SourcesPage client={client} />}
+        {route.name === "event" && <EventDetail client={client} id={route.id} canWrite={canWrite} />}
+        {route.name === "deliveries" && <DeliveriesPage client={client} canWrite={canWrite} />}
+        {route.name === "sources" && <SourcesPage client={client} canWrite={canWrite} />}
       </main>
     </>
   );

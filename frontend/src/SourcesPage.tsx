@@ -3,7 +3,7 @@ import type { Client, Source, Subscription } from "./api";
 import { formatTime, messageOf } from "./format";
 import { usePagedList } from "./usePagedList";
 
-export function SourcesPage({ client }: { client: Client }) {
+export function SourcesPage({ client, canWrite = true }: { client: Client; canWrite?: boolean }) {
   const sources = usePagedList((_filter: object, before) => client.listSources({ before }), {});
   const [name, setName] = useState("");
   const [secret, setSecret] = useState("");
@@ -28,6 +28,7 @@ export function SourcesPage({ client }: { client: Client }) {
   return (
     <section>
       <h2>Sources</h2>
+      {canWrite && (
       <form className="card toolbar" onSubmit={create}>
         <label>
           Name
@@ -39,6 +40,7 @@ export function SourcesPage({ client }: { client: Client }) {
         </label>
         <button type="submit">Create source</button>
       </form>
+      )}
       {error && <p role="alert" className="error">{error}</p>}
       {created && (
         <p role="status" className="notice">
@@ -50,6 +52,7 @@ export function SourcesPage({ client }: { client: Client }) {
         <SourceRow
           key={source.id}
           client={client}
+          canWrite={canWrite}
           source={source}
           open={openId === source.id}
           onToggle={() => setOpenId(openId === source.id ? null : source.id)}
@@ -66,12 +69,13 @@ export function SourcesPage({ client }: { client: Client }) {
 
 interface SourceRowProps {
   client: Client;
+  canWrite: boolean;
   source: Source;
   open: boolean;
   onToggle: () => void;
 }
 
-function SourceRow({ client, source, open, onToggle }: SourceRowProps) {
+function SourceRow({ client, canWrite, source, open, onToggle }: SourceRowProps) {
   return (
     <div className="card">
       <div className="row">
@@ -83,12 +87,12 @@ function SourceRow({ client, source, open, onToggle }: SourceRowProps) {
           Subscriptions
         </button>
       </div>
-      {open && <Subscriptions client={client} sourceId={source.id} />}
+      {open && <Subscriptions client={client} canWrite={canWrite} sourceId={source.id} />}
     </div>
   );
 }
 
-function Subscriptions({ client, sourceId }: { client: Client; sourceId: number }) {
+function Subscriptions({ client, canWrite, sourceId }: { client: Client; canWrite: boolean; sourceId: number }) {
   const list = usePagedList((_filter: object, before) => client.listSubscriptions(sourceId, { before }), {});
   const [url, setUrl] = useState("");
   const [eventFilter, setEventFilter] = useState("");
@@ -141,9 +145,11 @@ function Subscriptions({ client, sourceId }: { client: Client; sourceId: number 
                 <td>{subscription.event_filter ?? "All"}</td>
                 <td>{subscription.active ? "Active" : "Paused"}</td>
                 <td>
-                  <button type="button" onClick={() => toggle(subscription)}>
-                    {subscription.active ? "Pause" : "Resume"}
-                  </button>
+                  {canWrite && (
+                    <button type="button" onClick={() => toggle(subscription)}>
+                      {subscription.active ? "Pause" : "Resume"}
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -155,6 +161,7 @@ function Subscriptions({ client, sourceId }: { client: Client; sourceId: number 
           Load more
         </button>
       )}
+      {canWrite && (
       <form className="toolbar" onSubmit={add}>
         <label>
           URL
@@ -166,6 +173,7 @@ function Subscriptions({ client, sourceId }: { client: Client; sourceId: number 
         </label>
         <button type="submit">Add subscription</button>
       </form>
+      )}
       {(error ?? list.error) && <p role="alert" className="error">{error ?? list.error}</p>}
       {secret && (
         <p role="status" className="notice">

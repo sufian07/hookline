@@ -3,7 +3,7 @@ import type { Client, EventDetail as Detail } from "./api";
 import { canReplay, formatTime, messageOf } from "./format";
 import { StatusBadge } from "./StatusBadge";
 
-export function EventDetail({ client, id }: { client: Client; id: number }) {
+export function EventDetail({ client, id, canWrite = true }: { client: Client; id: number; canWrite?: boolean }) {
   const [event, setEvent] = useState<Detail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,7 +68,7 @@ export function EventDetail({ client, id }: { client: Client; id: number }) {
                 <span className="muted">
                   {delivery.attempts_count} of {delivery.attempt_limit} attempts
                 </span>
-                {canReplay(delivery.status) && (
+                {canWrite && canReplay(delivery.status) && (
                   <button type="button" aria-label={`Replay delivery ${delivery.id}`} onClick={() => replay(delivery.id)}>
                     Replay
                   </button>

@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from "react";
-import { ApiError } from "./api";
+import { ApiError, type Role } from "./api";
 import { messageOf } from "./format";
 
 interface Props {
-  verify: (token: string) => Promise<void>;
-  onAccept: (token: string) => void;
+  verify: (token: string) => Promise<Role>;
+  onAccept: (token: string, role: Role) => void;
 }
 
 export function TokenForm({ verify, onAccept }: Props) {
@@ -17,8 +17,7 @@ export function TokenForm({ verify, onAccept }: Props) {
     setBusy(true);
     setError(null);
     try {
-      await verify(token);
-      onAccept(token);
+      onAccept(token, await verify(token));
     } catch (err) {
       setError(err instanceof ApiError && err.status === 401 ? "That token was not accepted." : messageOf(err));
     } finally {
@@ -30,7 +29,7 @@ export function TokenForm({ verify, onAccept }: Props) {
     <form className="card narrow" onSubmit={submit}>
       <h1>Hookline</h1>
       <label>
-        Admin token
+        Access token
         <input type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} />
       </label>
       {error && <p role="alert" className="error">{error}</p>}
