@@ -1,0 +1,14 @@
+.git
+.github
+.bundle
+log/*
+tmp/*
+storage/*
+coverage
+spec
+docs
+.env*
+node_modules
+frontend/node_modules
+frontend/dist
+public/dashboard

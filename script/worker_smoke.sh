@@ -2,35 +2,46 @@
 # End-to-end check with the real server and Solid Queue worker:
 # create a source and subscription over the API, send a signed webhook,
 # then wait until the worker has recorded a delivery attempt.
+#
+# With SMOKE_BASE_URL and HOOKLINE_ADMIN_TOKEN set, it checks an app that is
+# already running (such as the Docker image) instead of starting one.
 set -euo pipefail
 
-export RAILS_ENV=development
-export HOOKLINE_ADMIN_TOKEN="smoke-$(openssl rand -hex 8)"
-PORT="${PORT:-3100}"
-BASE="http://127.0.0.1:${PORT}"
-AUTH="Authorization: Bearer ${HOOKLINE_ADMIN_TOKEN}"
 JSON="Content-Type: application/json"
 LOG_DIR="${LOG_DIR:-tmp/smoke}"
-
-mkdir -p "$LOG_DIR"
-bin/rails db:prepare
-
-bin/rails server -p "$PORT" -b 127.0.0.1 > "$LOG_DIR/server.log" 2>&1 &
-SERVER_PID=$!
-bin/jobs > "$LOG_DIR/jobs.log" 2>&1 &
-JOBS_PID=$!
+SERVER_PID=""
+JOBS_PID=""
 
 cleanup() {
-  kill "$SERVER_PID" "$JOBS_PID" 2>/dev/null || true
+  [ -n "$SERVER_PID" ] && kill "$SERVER_PID" "$JOBS_PID" 2>/dev/null || true
   wait 2>/dev/null || true
 }
 fail() {
   echo "FAIL: $1"
-  echo "--- server log"; tail -n 40 "$LOG_DIR/server.log" || true
-  echo "--- jobs log"; tail -n 40 "$LOG_DIR/jobs.log" || true
+  if [ -n "$SERVER_PID" ]; then
+    echo "--- server log"; tail -n 40 "$LOG_DIR/server.log" || true
+    echo "--- jobs log"; tail -n 40 "$LOG_DIR/jobs.log" || true
+  fi
   exit 1
 }
 trap cleanup EXIT
+
+if [ -n "${SMOKE_BASE_URL:-}" ]; then
+  BASE="$SMOKE_BASE_URL"
+  : "${HOOKLINE_ADMIN_TOKEN:?HOOKLINE_ADMIN_TOKEN is required with SMOKE_BASE_URL}"
+else
+  export RAILS_ENV=development
+  export HOOKLINE_ADMIN_TOKEN="smoke-$(openssl rand -hex 8)"
+  PORT="${PORT:-3100}"
+  BASE="http://127.0.0.1:${PORT}"
+  mkdir -p "$LOG_DIR"
+  bin/rails db:prepare
+  bin/rails server -p "$PORT" -b 127.0.0.1 > "$LOG_DIR/server.log" 2>&1 &
+  SERVER_PID=$!
+  bin/jobs > "$LOG_DIR/jobs.log" 2>&1 &
+  JOBS_PID=$!
+fi
+AUTH="Authorization: Bearer ${HOOKLINE_ADMIN_TOKEN}"
 
 json_field() { ruby -rjson -e "puts JSON.parse(STDIN.read).dig(*ARGV.map { |k| k =~ /\A\d+\z/ ? k.to_i : k })" "$@"; }
 

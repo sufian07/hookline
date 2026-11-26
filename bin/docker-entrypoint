@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+# Prepare the databases (and demo data, in demo mode) before the server starts.
+if [ "$1" = "bin/rails" ] && [ "$2" = "server" ]; then
+  bin/rails db:prepare
+  if [ "$HOOKLINE_DEMO_MODE" = "1" ]; then
+    bin/rails hookline:demo_seed
+  fi
+fi
+
+exec "$@"

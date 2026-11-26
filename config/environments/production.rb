@@ -57,6 +57,13 @@ Rails.application.configure do
   # Only use :id for inspections in production.
   config.active_record.attributes_for_inspect = [ :id ]
 
+  # On Render, only answer to the service's own hostname. Elsewhere (CI, a local
+  # container) any host is allowed.
+  if ENV["RENDER_EXTERNAL_HOSTNAME"].present?
+    config.hosts << ENV["RENDER_EXTERNAL_HOSTNAME"]
+    config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
+  end
+
   # Enable DNS rebinding protection and other `Host` header attacks.
   # config.hosts = [
   #   "example.com",     # Allow requests from example.com

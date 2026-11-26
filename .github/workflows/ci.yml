@@ -66,3 +66,72 @@ jobs:
         with:
           bundler-cache: true
       - run: script/worker_smoke.sh
+
+  image:
+    name: Docker image, demo mode and load test
+    needs: [rails, dashboard]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      ADMIN_TOKEN: ci-admin-token
+      VIEWER_TOKEN: ci-viewer-token
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ruby/setup-ruby@f9c4492e86def3e644ab32a0ef185eda5b0c20d0 # v1.342.0, the first release with Ruby 3.3.14
+
+      - name: Build the image
+        run: docker build --tag hookline:ci .
+
+      - name: Refuse to start without secrets
+        run: |
+          if docker run --rm hookline:ci bin/rails runner 'puts :started'; then
+            echo "The image started without its secrets"; exit 1
+          fi
+
+      - name: Start a normal container and a demo-mode container
+        run: |
+          secrets=(
+            -e SECRET_KEY_BASE="$(openssl rand -hex 64)"
+            -e ENCRYPTION_PRIMARY_KEY="$(openssl rand -hex 32)"
+            -e ENCRYPTION_DETERMINISTIC_KEY="$(openssl rand -hex 32)"
+            -e ENCRYPTION_KEY_DERIVATION_SALT="$(openssl rand -hex 32)"
+            -e HOOKLINE_ADMIN_TOKEN="$ADMIN_TOKEN"
+            -e HOOKLINE_VIEWER_TOKEN="$VIEWER_TOKEN"
+          )
+          docker run -d --name app -p 3000:3000 "${secrets[@]}" \
+            -e HOOKLINE_INGEST_PER_MINUTE=1000000 -e HOOKLINE_API_PER_MINUTE=1000000 hookline:ci
+          docker run -d --name demo -p 3001:3000 "${secrets[@]}" \
+            -e HOOKLINE_DEMO_MODE=1 -e APP_URL=https://hookline-ci.example.com hookline:ci
+          for port in 3000 3001; do
+            for _ in $(seq 60); do curl -sf "http://127.0.0.1:$port/up" > /dev/null && break; sleep 1; done
+            curl -sf "http://127.0.0.1:$port/up" > /dev/null
+          done
+
+      - name: Deliver through the worker inside the container
+        run: SMOKE_BASE_URL=http://127.0.0.1:3000 HOOKLINE_ADMIN_TOKEN="$ADMIN_TOKEN" script/worker_smoke.sh
+
+      - name: Demo mode serves seeded data, read-only to viewers
+        run: |
+          base=http://127.0.0.1:3001
+          viewer="Authorization: Bearer $VIEWER_TOKEN"
+          events=$(curl -sf -H "$viewer" "$base/api/events?limit=100" | ruby -rjson -e 'puts JSON.parse(STDIN.read)["data"].size')
+          echo "Seeded events visible to the viewer: $events"
+          test "$events" -ge 40
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H "$viewer" -H 'Content-Type: application/json' -d '{"name":"x"}' "$base/api/sources")" = 403
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$base/dashboard/")" = 200
+
+      - name: Load test ingest
+        run: |
+          {
+            echo "### Ingest load test (GitHub-hosted runner, Docker image)"
+            echo
+            ruby script/load_test.rb http://127.0.0.1:3000 "$ADMIN_TOKEN" 3000 8
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Container logs
+        if: failure()
+        run: |
+          docker logs app 2>&1 | tail -n 80 || true
+          docker logs demo 2>&1 | tail -n 80 || true
