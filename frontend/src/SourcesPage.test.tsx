@@ -12,7 +12,7 @@ it("creates a source and shows its token once", async () => {
   await userEvent.type(screen.getByLabelText("Signing secret"), "s3cret");
   await userEvent.click(screen.getByRole("button", { name: "Create source" }));
 
-  expect(createSource).toHaveBeenCalledWith("Shop", "s3cret");
+  expect(createSource).toHaveBeenCalledWith("Shop", "s3cret", "hookline");
   expect(await screen.findByRole("status")).toHaveTextContent("/in/tok123");
   expect(screen.getByRole("button", { name: "Subscriptions for Shop" })).toBeInTheDocument();
 });
@@ -53,4 +53,19 @@ it("pauses and resumes a subscription", async () => {
 
   expect(updateSubscription).toHaveBeenCalledWith(3, { active: false });
   expect(await screen.findByRole("button", { name: "Resume" })).toBeInTheDocument();
+});
+
+it("creates a Stripe-signed source and labels it", async () => {
+  const createSource = vi
+    .fn()
+    .mockResolvedValue({ ...source({ id: 2, name: "Stripe", verification: "stripe" }), token: "t", ingest_path: "/in/t" });
+  render(<SourcesPage client={fakeClient({ createSource })} />);
+
+  await userEvent.type(screen.getByLabelText("Name"), "Stripe");
+  await userEvent.type(screen.getByLabelText("Signing secret"), "whsec_x");
+  await userEvent.selectOptions(screen.getByLabelText("Signature scheme"), "stripe");
+  await userEvent.click(screen.getByRole("button", { name: "Create source" }));
+
+  expect(createSource).toHaveBeenCalledWith("Stripe", "whsec_x", "stripe");
+  expect(await screen.findByText("Stripe-signed")).toBeInTheDocument();
 });

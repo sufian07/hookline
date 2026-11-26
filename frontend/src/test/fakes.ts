@@ -59,7 +59,7 @@ export function attempt(overrides: Partial<Attempt> = {}): Attempt {
 }
 
 export function source(overrides: Partial<Source> = {}): Source {
-  return { id: 1, name: "Shop", created_at: "2026-11-26T08:00:00.000Z", ...overrides };
+  return { id: 1, name: "Shop", verification: "hookline", created_at: "2026-11-26T08:00:00.000Z", ...overrides };
 }
 
 export function subscription(overrides: Partial<Subscription> = {}): Subscription {

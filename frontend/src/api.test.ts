@@ -24,13 +24,13 @@ describe("api client", () => {
   it("sends JSON bodies", async () => {
     const fetch = respond(201, { id: 1, name: "Shop", token: "x", ingest_path: "/in/x", created_at: "" });
 
-    await createClient("t0k", fetch).createSource("Shop", "s3cret");
+    await createClient("t0k", fetch).createSource("Shop", "s3cret", "stripe");
 
     const [url, init] = fetch.mock.calls[0];
     expect(url).toBe("/api/sources");
     expect(init.method).toBe("POST");
     expect(new Headers(init.headers).get("Content-Type")).toBe("application/json");
-    expect(JSON.parse(init.body)).toEqual({ name: "Shop", signing_secret: "s3cret" });
+    expect(JSON.parse(init.body)).toEqual({ name: "Shop", signing_secret: "s3cret", verification: "stripe" });
   });
 
   it("surfaces the server's error message and status", async () => {
