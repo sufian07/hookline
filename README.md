@@ -11,12 +11,13 @@ A small webhook gateway built with Rails 8. It receives signed webhooks, stores 
 - **Destination safety:** https only, private and reserved addresses blocked, connection pinned to the checked address, redirects not followed
 - **Management API:** sources, subscriptions, events and deliveries, with bearer-token auth and cursor pagination
 - **Replay:** re-queue a dead or delivered delivery with a fresh set of attempts
+- **Dashboard:** React and TypeScript, served by Rails at `/dashboard/`. Browse events and their attempts, find dead deliveries and replay them, create sources and subscriptions, and pause or resume subscriptions.
 
 Delivery is at least once. Receivers should de-duplicate on `X-Hookline-Delivery`.
 
 ## Not built yet
 
-React dashboard, CI and deployment.
+CI and deployment. Access is a single admin token, with no user accounts or audit log.
 
 ## Flow
 
@@ -42,6 +43,17 @@ bundle exec rspec
 HOOKLINE_ADMIN_TOKEN=change-me bin/rails server
 bin/jobs   # workers; needs fork, so Linux or macOS
 ```
+
+## Dashboard
+
+```sh
+cd frontend
+npm ci
+npm test          # Vitest and Testing Library
+npm run build     # type-checks, then builds into public/dashboard
+```
+
+Then open `http://localhost:3000/` and sign in with the admin token. The token is kept in session storage, so it lasts for the browser tab only. For live reload, run `npm run dev` next to the Rails server; Vite proxies `/api` to port 3000.
 
 ## API
 
